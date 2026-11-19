@@ -2,7 +2,7 @@
 
 An Android app for register tablets that lets a browser-based point of sale take card payments through the Square POS app.
 
-I wrote it for Moody Teas, where the register is [Odoo Community](https://www.odoo.com/). Odoo's POS runs in a browser. On Android, Square only takes in-person card payments through its own app, which you start with an Android intent. A browser can't send that intent and get the result back, so this app sits in between:
+We wrote it for Moody Teas, where our register is [Odoo Community](https://www.odoo.com/). Odoo's POS runs in a browser. On Android, Square only takes in-person card payments through its own app, which you start with an Android intent. A browser can't send that intent and get the result back, so this app sits in between:
 
 1. **KioskActivity** shows the POS full-screen in a WebView and gives the page a small JavaScript bridge (`window.Android.launchIntent`).
 2. When the cashier picks Square, the POS page fires a deep link: `<scheme>://charge?...`.
