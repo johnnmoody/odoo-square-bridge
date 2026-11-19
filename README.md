@@ -1,8 +1,8 @@
 # square-bridge
 
-An Android kiosk app that lets a web-based point of sale take card payments through the Square POS app.
+An Android app for register tablets that lets a browser-based point of sale take card payments through the Square POS app.
 
-We run [Odoo Community](https://www.odoo.com/) as our register at Moody Teas. Odoo's POS is a web app, and Square's in-person payments on Android go through the Square POS app with an Android intent. A browser can't send that intent and get the result back, so this app sits in between:
+I wrote it for Moody Teas, where the register is [Odoo Community](https://www.odoo.com/). Odoo's POS runs in a browser. On Android, Square only takes in-person card payments through its own app, which you start with an Android intent. A browser can't send that intent and get the result back, so this app sits in between:
 
 1. **KioskActivity** shows the POS full-screen in a WebView and gives the page a small JavaScript bridge (`window.Android.launchIntent`).
 2. When the cashier picks Square, the POS page fires a deep link: `<scheme>://charge?...`.
@@ -11,14 +11,16 @@ We run [Odoo Community](https://www.odoo.com/) as our register at Moody Teas. Od
 
 A second launcher icon, **KDSActivity**, shows a kitchen display full-screen on the same tablet. It has its own task affinity, so tapping either icon opens that app instead of whichever one was used last.
 
-## Things we learned the hard way
+## Problems it deals with
 
-- **Process death mid-payment.** Cheap tablets with little RAM kill your process while Square is in the foreground. When Android recreates the activity, it delivers the pending result again. If `onCreate` starts Square a second time, you get a second charge. `BridgeActivity` checks `savedInstanceState` and waits for the result instead.
-- **`intent://` URIs need `Intent.parseUri(url, Intent.URI_INTENT_SCHEME)`.** Wrapping one in `ACTION_VIEW` makes Square answer "no activity found to handle intent".
-- **Reader disconnects look like instant failures.** If Square comes back in under four seconds with a reader error, the app tells staff to reconnect the reader instead of letting them retry over and over.
-- **Battery optimization unpairs the reader.** The app asks Android to exempt both itself and the Square app.
-- **Some tablet makers ignore orientation requests.** With `WRITE_SECURE_SETTINGS` granted over adb, the app writes `ignore_orientation_request=0` each time it starts, so landscape survives a reboot.
-- **Square ties your app to its signing key.** Register the SHA-1 of a key you keep. A key that changes every build breaks payments without much of a clue why.
+Each of these broke something for us before the fix went in.
+
+- Our tablets don't have much memory, and Android sometimes kills the app while Square is open. When Android brings the screen back, it delivers the pending result again. If `onCreate` starts Square a second time, the customer gets charged twice. `BridgeActivity` checks `savedInstanceState` and waits for the result instead.
+- `intent://` links have to be opened with `Intent.parseUri(url, Intent.URI_INTENT_SCHEME)`. If you wrap one in `ACTION_VIEW`, Square says "no activity found to handle intent".
+- A disconnected card reader shows up as a payment that fails almost instantly. If Square comes back in under four seconds with a reader error, the app tells staff to reconnect the reader, so they don't keep hitting retry.
+- Battery optimization can drop the reader connection, so the app asks Android to leave both itself and the Square app alone.
+- Our tablets ignore the app's request for landscape after a reboot. With `WRITE_SECURE_SETTINGS` granted over adb, the app writes `ignore_orientation_request=0` every time it starts.
+- Square ties your app to the key it's signed with. Register the SHA-1 of a key you keep. If the key changes between builds, payments stop working and the error doesn't tell you why.
 
 ## Configure
 
