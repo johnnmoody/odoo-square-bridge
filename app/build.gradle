@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+// Every deployment-specific value comes from the environment at build time.
+// Nothing here points at a real server or carries a real credential.
+def env = { String key, String fallback -> System.getenv(key) ?: fallback }
+
+android {
+    namespace 'co.moodyteas.squarebridge'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId env("APP_ID", "com.example.squarebridge")
+        minSdk 24
+        targetSdk 35
+        versionCode (System.getenv("GITHUB_RUN_NUMBER")?.toInteger() ?: 1)
+        versionName "1.${System.getenv("GITHUB_RUN_NUMBER") ?: "dev"}"
+
+        // Deep link scheme the POS web app fires: <scheme>://charge?...
+        manifestPlaceholders = [bridgeScheme: env("BRIDGE_SCHEME", "squarebridge")]
+
+        buildConfigField "String", "POS_URL", "\"${env("POS_URL", "https://pos.example.com")}\""
+        buildConfigField "String", "KDS_URL", "\"${env("KDS_URL", "https://kds.example.com")}\""
+        // Optional HTTP basic auth in front of the POS. Empty = not used.
+        buildConfigField "String", "AUTH_USER", "\"${env("POS_AUTH_USER", "")}\""
+        buildConfigField "String", "AUTH_PASS", "\"${env("POS_AUTH_PASS", "")}\""
+        // Optional self-update manifest ({"versionCode": n, "url": "..."}). Empty = updater off.
+        buildConfigField "String", "UPDATE_MANIFEST_URL", "\"${env("UPDATE_MANIFEST_URL", "")}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity-ktx:1.9.3'
+}
